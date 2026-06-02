@@ -15,25 +15,12 @@
 set -euo pipefail
 
 REPO="Peeradonte48/FIGMA-IMPLEMENT"
-RAW_BASE="https://raw.githubusercontent.com/${REPO}/main"
+BRANCH="main"
+TARBALL="https://codeload.github.com/${REPO}/tar.gz/refs/heads/${BRANCH}"
 SKILLS=(
   "implement-figma-design"
   "figjam-to-use-case-narrative"
   "use-case-narrative-to-prototype"
-)
-# Files shipped per skill (relative to the skill directory).
-FILES_implement_figma_design=(
-  "SKILL.md"
-)
-FILES_figjam_to_use_case_narrative=(
-  "SKILL.md"
-  "references/figjam-mapping.md"
-  "references/use-case-narrative-format.md"
-)
-FILES_use_case_narrative_to_prototype=(
-  "SKILL.md"
-  "references/prototype-mapping.md"
-  "references/use-case-narrative-format.md"
 )
 
 # --- arg parsing -----------------------------------------------------------
@@ -46,65 +33,68 @@ while [ $# -gt 0 ]; do
     --dir)       TARGET="${2:?--dir needs a path}"; shift 2 ;;
     --force)     FORCE=1; shift ;;
     --uninstall) UNINSTALL=1; shift ;;
-    -h|--help)   sed -n '2,20p' "$0"; exit 0 ;;
+    -h|--help)   sed -n '2,14p' "$0"; exit 0 ;;
     *) echo "Unknown option: $1" >&2; exit 1 ;;
   esac
 done
 [ -n "$TARGET" ] || TARGET="${HOME}/.claude/skills"
 
-# --- helpers ---------------------------------------------------------------
 say() { printf '  %s\n' "$1"; }
 
-# Where is the skills/ source? Local checkout if present, else download.
+# --- locate the skills/ source ---------------------------------------------
+# Use the local checkout if this script sits next to a skills/ dir; otherwise
+# download a tarball of the repo and use the skills/ dir inside it.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
-SOURCE_MODE="local"
-if [ ! -d "${SCRIPT_DIR}/skills" ]; then
-  SOURCE_MODE="remote"
-fi
+CLEANUP=""
+trap '[ -n "$CLEANUP" ] && rm -rf "$CLEANUP"' EXIT
 
-files_for() {
-  # Map a skill name to its file list via the FILES_<name> arrays above.
-  local var="FILES_${1//-/_}[@]"
-  printf '%s\n' "${!var}"
-}
+if [ -d "${SCRIPT_DIR}/skills" ]; then
+  SRC="${SCRIPT_DIR}/skills"
+  MODE="local"
+else
+  MODE="remote"
+  TMP="$(mktemp -d)"
+  CLEANUP="$TMP"
+  echo "Downloading ${REPO}@${BRANCH}…"
+  curl -fsSL "$TARBALL" | tar -xzf - -C "$TMP"
+  SRC="$(echo "$TMP"/*/skills)"   # extracted dir is REPO-BRANCH/
+  if [ ! -d "$SRC" ]; then
+    echo "Could not find skills/ in the downloaded archive." >&2
+    exit 1
+  fi
+fi
 
 # --- uninstall -------------------------------------------------------------
 if [ "$UNINSTALL" -eq 1 ]; then
   echo "Removing skills from: ${TARGET}"
   for s in "${SKILLS[@]}"; do
     if [ -d "${TARGET}/${s}" ]; then
-      rm -rf "${TARGET:?}/${s}"
-      say "removed ${s}"
+      rm -rf "${TARGET:?}/${s}"; say "removed ${s}"
     else
       say "skip   ${s} (not installed)"
     fi
   done
-  echo "Done."
-  exit 0
+  echo "Done."; exit 0
 fi
 
 # --- install ---------------------------------------------------------------
-echo "Installing Figma skill suite (${SOURCE_MODE}) into: ${TARGET}"
+echo "Installing Figma skill suite (${MODE}) into: ${TARGET}"
 mkdir -p "${TARGET}"
 
 for s in "${SKILLS[@]}"; do
   dest="${TARGET}/${s}"
+  if [ ! -d "${SRC}/${s}" ]; then
+    say "skip   ${s} (missing in source)"; continue
+  fi
   if [ -d "$dest" ] && [ "$FORCE" -ne 1 ]; then
     printf '  %s already exists. Overwrite? [y/N] ' "$s"
     read -r ans </dev/tty || ans="n"
     case "$ans" in [yY]*) ;; *) say "skip   ${s}"; continue ;; esac
   fi
-  rm -rf "$dest"
-  if [ "$SOURCE_MODE" = "local" ]; then
-    mkdir -p "$dest"
-    cp -R "${SCRIPT_DIR}/skills/${s}/." "$dest/"
-  else
-    while IFS= read -r rel; do
-      [ -n "$rel" ] || continue
-      mkdir -p "$(dirname "${dest}/${rel}")"
-      curl -fsSL "${RAW_BASE}/skills/${s}/${rel}" -o "${dest}/${rel}"
-    done < <(files_for "$s")
-  fi
+  rm -rf "$dest"; mkdir -p "$dest"
+  cp -R "${SRC}/${s}/." "$dest/"
+  # Never ship macOS cruft into a user's skills dir.
+  find "$dest" -name '.DS_Store' -type f -delete 2>/dev/null || true
   say "installed ${s}"
 done
 
