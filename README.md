@@ -8,7 +8,7 @@ This repo is a **skill-only scaffold**. There is no application code, no build s
 
 ## The skills
 
-The suite forms a **FigJam → narrative → prototype** pipeline, plus two standalone paths — a **design → code** path and a **sitemap → spec** path.
+The suite forms a **FigJam → narrative → prototype** pipeline, plus three standalone paths — a **design → code** path, a **sitemap → spec** path, and a **running page → Figma** path.
 
 | Skill | Direction | What it does |
 |-------|-----------|--------------|
@@ -16,6 +16,7 @@ The suite forms a **FigJam → narrative → prototype** pipeline, plus two stan
 | **[figjam-to-use-case-narrative](skills/figjam-to-use-case-narrative/SKILL.md)** | FigJam → narrative *(step 1)* | Reads a user-flow diagram from FigJam and writes a structured **use-case-narrative (UCN)** markdown doc. Read-only; never edits the board. |
 | **[use-case-narrative-to-prototype](skills/use-case-narrative-to-prototype/SKILL.md)** | narrative → code *(step 3)* | Turns a UCN doc into a walkable, clickable code prototype (behavioral fidelity, not pixel fidelity; React by default, stack-aware). |
 | **[figjam-sitemap-to-spec](skills/figjam-sitemap-to-spec/SKILL.md)** | FigJam → spec *(standalone)* | Reads a sitemap / site-structure diagram from FigJam and writes a **product spec** markdown doc (sitemap tree + per-page specs). Read-only; never edits the board. Composes with doc-review and build skills. |
+| **[page-to-figma](skills/page-to-figma/SKILL.md)** | running page → Figma *(standalone)* | Transcribes a **running** product page into a 1:1, pixel-perfect Figma frame. Extracts live-DOM computed styles as ground truth, delegates the build to the official Figma plugin, then gates on a **numeric property read-back** — correcting until every value matches. *(Requires the official Figma plugin.)* |
 
 **Pipeline at a glance:**
 
@@ -23,6 +24,7 @@ The suite forms a **FigJam → narrative → prototype** pipeline, plus two stan
   FigJam flow     ──▶  figjam-to-use-case-narrative  ──▶  UCN.md  ──▶  use-case-narrative-to-prototype  ──▶  clickable prototype
   Figma frame     ──▶  implement-figma-design  ──▶  pixel-perfect build (standalone)
   FigJam sitemap  ──▶  figjam-sitemap-to-spec  ──▶  product-spec.md (standalone)
+  Running page    ──▶  page-to-figma  ──▶  pixel-perfect Figma frame (standalone)
 ```
 
 > `implement-figma-design` is the pixel-fidelity path; `use-case-narrative-to-prototype` is the behavior-fidelity path. When a finished design exists and you need 1:1 accuracy, reach for the former.
@@ -33,6 +35,7 @@ The suite forms a **FigJam → narrative → prototype** pipeline, plus two stan
 
 - **Claude Code** (CLI, desktop, or IDE extension).
 - The **Figma MCP server** connected, so the skills can read from Figma/FigJam. The skills use the read tools `get_design_context`, `get_screenshot`, `get_metadata`, `get_variable_defs`, and `get_figjam`. To connect it, see Figma's [Guide to the Figma MCP server](https://help.figma.com/hc/en-us/articles/32132100833559-Guide-to-the-Figma-MCP-server) and the [developer docs](https://developers.figma.com/docs/figma-mcp-server/). These are the current, unified tool names (local Dev Mode server **and** the hosted connector). An **outdated** Figma desktop install may still expose the legacy names `get_code` / `get_image` instead — if a skill reports "tool not found" on step 1, update Figma.
+- For `page-to-figma` only: the **official Figma plugin** must be installed (it provides the `figma-use` and `figma-generate-design` skills this one supervises) and the write tools `use_figma` / `generate_figma_design` must be available. This is the one suite skill with a hard dependency beyond the MCP read tools — see [docs/adr/0001-page-to-figma-depends-on-official-figma-plugin.md](docs/adr/0001-page-to-figma-depends-on-official-figma-plugin.md).
 - For screenshot-based verification in `implement-figma-design`: any browser/screenshot tooling available in your project (e.g. Playwright).
 
 ---
@@ -45,7 +48,7 @@ The suite forms a **FigJam → narrative → prototype** pipeline, plus two stan
 curl -fsSL https://raw.githubusercontent.com/Peeradonte48/FIGMA-IMPLEMENT/main/install.sh | bash
 ```
 
-Installs all four skills into your user skills directory, `~/.claude/skills/`.
+Installs all five skills into your user skills directory, `~/.claude/skills/`.
 
 ### Option B — clone and run the installer
 
@@ -56,12 +59,12 @@ cd FIGMA-IMPLEMENT
 ./install.sh --project       # project-only → ./.claude/skills (run from your project root)
 ./install.sh --dir <path>    # custom skills directory
 ./install.sh --force         # overwrite existing copies without prompting
-./install.sh --uninstall     # remove the four skills
+./install.sh --uninstall     # remove the five skills
 ```
 
 ### Option C — copy by hand
 
-Each skill is a self-contained folder. Copy the four directories under [`skills/`](skills/) into any skills directory Claude Code reads:
+Each skill is a self-contained folder. Copy the five directories under [`skills/`](skills/) into any skills directory Claude Code reads:
 
 ```bash
 cp -R skills/* ~/.claude/skills/        # user-level
@@ -94,6 +97,10 @@ Once installed, the skills trigger automatically from natural language — you g
 - **Spec out an app from a sitemap:**
   > "Turn this FigJam sitemap into a product spec: `https://figma.com/board/…`"
   → `figjam-sitemap-to-spec`
+
+- **Mirror a running page into Figma:**
+  > "Put our live settings page into Figma exactly: `http://localhost:3000/settings`"
+  → `page-to-figma`
 
 You can also invoke a skill explicitly by name, e.g. *"use the use-case-narrative-to-prototype skill on …"*.
 
@@ -154,11 +161,13 @@ skills/
 │   └── references/
 │       ├── prototype-mapping.md             # UCN section → prototype element mapping
 │       └── use-case-narrative-format.md     # identical copy of the UCN template
-└── figjam-sitemap-to-spec/
-    ├── SKILL.md
-    └── references/
-        ├── sitemap-mapping.md               # FigJam sitemap primitive → spec section mapping
-        └── product-spec-guide.md            # flexible product-spec authoring guide (single-owner)
+├── figjam-sitemap-to-spec/
+│   ├── SKILL.md
+│   └── references/
+│       ├── sitemap-mapping.md               # FigJam sitemap primitive → spec section mapping
+│       └── product-spec-guide.md            # flexible product-spec authoring guide (single-owner)
+└── page-to-figma/
+    └── SKILL.md                             # running page → Figma accuracy orchestrator (no references/)
 ```
 
 > **Shared format contract:** the two `references/use-case-narrative-format.md` files are byte-identical on purpose — one skill writes the format, the other reads it. **If you edit one, edit the other to match.**
