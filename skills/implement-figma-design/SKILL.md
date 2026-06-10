@@ -96,8 +96,15 @@ width and you're unsure how it should reflow, ask.
 
 Render your build and compare it side-by-side against the `get_screenshot` reference
 from step 1. Screenshot your running UI with whatever browser/screenshot tooling the
-project already has available, then diff it against the Figma image. Walk through each
-property deliberately:
+project already has available, then diff it against the Figma image.
+
+**If the project has no browser/screenshot tooling, do not eyeball your own code and
+call it a match.** That silently breaks the one promise this skill makes. Instead, say so
+and offer to set up a headless browser (e.g. Playwright) to capture the screenshot, or
+stop and tell the user the build is **unverified**. Never report a 1:1 / pixel-perfect
+match you did not actually compare against a rendered screenshot.
+
+When you can capture the screenshot, walk through each property deliberately:
 
 - Colors — exact hex / token, including hovers and states.
 - Dimensions — width, height, padding, margins, gaps.
@@ -119,4 +126,8 @@ and keep asking until the answer is unambiguous.
 ## Helpful resources
 
 - **MCP:** the Figma plugin read tools are the only dependency — `get_design_context`,
-  `get_screenshot`, `get_metadata`, `get_variable_defs`.
+  `get_screenshot`, `get_metadata`, `get_variable_defs`. These are the current, unified
+  tool names. If a call returns "tool not found," the connected Figma MCP is outdated and
+  may expose the legacy names `get_code` (≈ `get_design_context`) / `get_image`
+  (≈ `get_screenshot`) instead — tell the user to update Figma, or fall back to the legacy
+  names for this run.

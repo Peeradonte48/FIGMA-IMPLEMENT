@@ -7,7 +7,7 @@
 #   ./install.sh --project       # install into ./.claude/skills (this project only)
 #   ./install.sh --dir <path>    # install into a custom skills directory
 #   ./install.sh --force         # overwrite existing skills without prompting
-#   ./install.sh --uninstall     # remove the three skills from the target
+#   ./install.sh --uninstall     # remove the four skills from the target
 #
 # Remote one-liner (no clone needed):
 #   curl -fsSL https://raw.githubusercontent.com/Peeradonte48/FIGMA-IMPLEMENT/main/install.sh | bash
@@ -21,6 +21,7 @@ SKILLS=(
   "implement-figma-design"
   "figjam-to-use-case-narrative"
   "use-case-narrative-to-prototype"
+  "figjam-sitemap-to-spec"
 )
 
 # --- arg parsing -----------------------------------------------------------
@@ -101,4 +102,4 @@ done
 echo
 echo "Done. Restart Claude Code (or run /doctor) so it picks up the new skills."
 echo "Invoke a skill by sharing a Figma/FigJam link, or type its name, e.g.:"
-echo "  implement-figma-design  •  figjam-to-use-case-narrative  •  use-case-narrative-to-prototype"
+echo "  implement-figma-design  •  figjam-to-use-case-narrative  •  use-case-narrative-to-prototype  •  figjam-sitemap-to-spec"

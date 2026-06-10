@@ -4,19 +4,21 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this repo is
 
-This is a **skill-only scaffold**, not an application. It contains three portable, stack-agnostic Claude Code skills under [skills/](skills/) and nothing else — no `package.json`, no source tree, no test setup, and no git repository. There are therefore no build/lint/test commands to document. If real app code is ever added, update this file with the actual commands.
+This is a **skill-only scaffold**, not an application. It contains four portable, stack-agnostic Claude Code skills under [skills/](skills/) and nothing else — no `package.json`, no source tree, no test setup, and no git repository. There are therefore no build/lint/test commands to document. If real app code is ever added, update this file with the actual commands.
 
 The skills are deliberately **not** tied to any one project, framework, or design system. They detect and conform to whatever target project they're run against. (An earlier version of this repo hardcoded a "Ramen POS / Next.js / Tailwind" target; that coupling has been removed — do not reintroduce project-specific assumptions into the skills.)
 
 ## The skill suite
 
-The three skills form a **FigJam → narrative → prototype** pipeline, plus one standalone design→code path. All read from Figma/FigJam via the Figma MCP plugin and never guess — each opens with a "clarify until clear" rule: stop and ask the user rather than inventing a missing detail.
+The four skills form a **FigJam → narrative → prototype** pipeline, plus two standalone paths (design→code and sitemap→spec). All read from Figma/FigJam via the Figma MCP plugin and never guess — each opens with a "clarify until clear" rule: stop and ask the user rather than inventing a missing detail.
 
 - **[implement-figma-design](skills/implement-figma-design/SKILL.md)** — *standalone, design → code.* Transcribes a finished Figma frame into a 1:1, pixel-perfect build in the target codebase, then verifies by diffing a screenshot of the running UI against the Figma reference. Use when the user shares a figma.com link and wants it built/matched. This is the web/React path; it does **not** push code into Figma (that's `figma-generate-design`) and does **not** build Flutter/mobile (that's `implement-figma-design-mobile`).
 
 - **[figjam-to-use-case-narrative](skills/figjam-to-use-case-narrative/SKILL.md)** — *pipeline step 1, FigJam → narrative.* Reads a user-flow diagram from FigJam (via `get_figjam`) and writes a structured use-case-narrative (UCN) markdown doc. Reads only; never edits the board.
 
 - **[use-case-narrative-to-prototype](skills/use-case-narrative-to-prototype/SKILL.md)** — *pipeline step 3, narrative → code.* Turns a UCN doc into a walkable, clickable code prototype (behavioral fidelity, not pixel fidelity; React by default, stack-aware). When a finished Figma design exists and pixel fidelity is needed, defer to `implement-figma-design`.
+
+- **[figjam-sitemap-to-spec](skills/figjam-sitemap-to-spec/SKILL.md)** — *standalone, FigJam → spec.* Reads a sitemap / site-structure diagram from FigJam (via `get_figjam`) and writes a product spec markdown doc (sitemap tree + per-page specs). Reads only; never edits the board. Standalone, but the spec is plain markdown that composes with doc-review skills (e.g. `grill-me`) and the build skills above. Its `references/product-spec-guide.md` is flexible guidance, not a strict template, and is single-owner (not part of the shared contract below).
 
 ## Shared format contract — keep in sync
 

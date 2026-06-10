@@ -30,16 +30,24 @@ out every precondition or stakeholder interest. **Never invent the missing piece
 this skill is active, whenever a node, connector, branch, or label is ambiguous — or a
 required UCN section (Preconditions, Stakeholders & Interests, Business Rules, the actor
 behind a step) cannot be grounded in something actually on the board — **stop and ask the
-user, and keep asking until it's clear.** Batch related questions, but do not write a
-section you had to guess. A confidently-worded narrative built on a guess is worse than an
-explicit "this wasn't on the diagram — who is the actor here?"
+user.** Batch related questions into as few rounds as possible (don't drip them one at a
+time), but do not write a section you had to guess. A confidently-worded narrative built
+on a guess is worse than an explicit "this wasn't on the diagram — who is the actor here?"
+
+For **minor or optional** gaps the board doesn't settle, you don't have to block forever:
+prefer omitting the ungrounded detail over inventing it, and record it in the coverage
+report (step 4) so the user can fill it in. Reserve the hard stop for the required-section
+gaps above — the things a narrative is meaningless without.
 
 ## Workflow
 
 ### 1. Read the diagram (ground truth, don't infer from the picture alone)
 
-Parse the FigJam URL into `fileKey` and `nodeId` (in `figma.com/...?node-id=:nodeId`,
-convert the `-` in the node id to `:`). Then:
+Parse the FigJam URL into `fileKey` and `nodeId`. FigJam boards live at
+`figma.com/board/:fileKey/...`; when a `?node-id=:nodeId` is present, convert the `-` in
+the node id to `:`. **If the link has no `node-id` (a whole-board link, or the user just
+says "this board"), don't guess a node** — read the whole board, or ask which
+section / frame to focus on if the board holds several flows. Then:
 
 - `get_figjam` — the primary source of truth. Returns the node tree: shapes/cards, text,
   **connectors** (the arrows that define order and branching), and sections/swimlanes.
